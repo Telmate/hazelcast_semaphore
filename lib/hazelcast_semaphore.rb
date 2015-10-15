@@ -51,4 +51,6 @@ module HazelcastSemaphore
       @client = nil
     end
   end
+
+  # TODO Add lock / mutex functionality
 end

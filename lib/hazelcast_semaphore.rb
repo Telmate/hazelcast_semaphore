@@ -10,7 +10,7 @@ module HazelcastSemaphore
     java_import 'com.hazelcast.client.impl.HazelcastClientProxy'
     java_import 'java.util.concurrent.TimeUnit'
 
-    def initialize(name = "default", host="127.0.0.1", opts)
+    def initialize(name = "default", host = "127.0.0.1", opts = {})
       network_config = ClientNetworkConfig.new
       network_config.addAddress(host)
 
@@ -23,7 +23,7 @@ module HazelcastSemaphore
       @semaphore.init(opts[:resource]) if ! semaphore_exists?(name)
     end
 
-    def lock(timeout)
+    def lock(timeout = 0)
       if @semaphore.tryAcquire(timeout, TimeUnit::SECONDS)
         if block_given?
           yield
@@ -42,6 +42,7 @@ module HazelcastSemaphore
     def available_permits
       @semaphore.availablePermits
     end
+
 
     private
 

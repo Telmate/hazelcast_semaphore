@@ -2,24 +2,45 @@ require "spec_helper"
 
 describe HazelcastSemaphore do
 
-  sem = HazelcastSemaphore::Client.new("test_token", host='127.0.0.1', :resource => 5)
+  hclient = HazelcastSemaphore::Client.new('127.0.0.1')
 
-
-  it "should initialize a semaphore" do
-    expect(sem.class).to eq(HazelcastSemaphore::Client)
+  after(:all) do
+    hclient.shutdown if hclient
   end
 
-  it "should return available permits" do
-    expect(sem.available_permits).to eq(5)
-    expect(sem.available_permits).to_not eq(6)
+  it "inits a semaphore with the given number of permits" do
+    token = "#{Time.now.to_i}#{rand(1000000)}"
+    expect(hclient.exists?(token)).to be false
+    expect(hclient.init(token, 4)).to be true
+    expect(hclient.exists?(token)).to be true
   end
 
-  it "should lock  and unlock permits" do
-    sem.lock(2)
-    expect(sem.available_permits).to eq(4)
+  it "destroys a semaphore" do
+    token = "#{Time.now.to_i}#{rand(1000000)}"
+    expect(hclient.init(token, 4)).to be true
+    expect(hclient.exists?(token)).to be true
+    hclient.destroy(token)
+    expect(hclient.exists?(token)).to be false
+  end
 
-    sem.unlock
-    expect(sem.available_permits).to eq(5)
+  it "should allow execution if there are available permits" do
+    token = "#{Time.now.to_i}#{rand(1000000)}"
+    hclient.init(token, 4)
+    hclient.exec_inside(token) do
+      expect(true).to be true
+    end
+  end
+
+  it "should allow only up to available_permits number of executions" do
+    pending 'Implement me'
+  end
+
+  it "should NOT allow execution when there are no available permits" do
+    pending 'Implement me'
+  end
+
+  it "should tell if a semaphore exists" do
+    pending 'Implement me'
   end
 
 end

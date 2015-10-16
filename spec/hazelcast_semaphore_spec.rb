@@ -32,15 +32,31 @@ describe HazelcastSemaphore do
   end
 
   it "should allow only up to available_permits number of executions" do
-    pending 'Implement me'
+    token = "#{Time.now.to_i}#{rand(1000000)}"
+    hclient.init(token, 4)
+
+    4.times.each do
+      Thread.new { hclient.exec_inside(token) { sleep 2 } }
+    end
+    expect(hclient.available_permits(token)).to eq 0
   end
 
   it "should NOT allow execution when there are no available permits" do
-    pending 'Implement me'
+    token = "#{Time.now.to_i}#{rand(1000000)}"
+    hclient.init(token, 2)
+
+    2.times.each do
+      Thread.new { hclient.exec_inside(token) { sleep 10 } }
+    end
+    expect { hclient.exec_inside(token, 2) { } }.to raise_error(RuntimeError, "Timeout in 2s waiting for execution")
   end
 
   it "should tell if a semaphore exists" do
-    pending 'Implement me'
+    token = "#{Time.now.to_i}#{rand(1000000)}"
+    hclient.init(token, 2)
+
+    expect(hclient.exists?(token)).to be true
+    expect(hclient.exists?("unknown_token")).to be false
   end
 
 end

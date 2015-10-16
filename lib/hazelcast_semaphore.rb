@@ -51,6 +51,12 @@ module HazelcastSemaphore
       @client.shutdown
       @client = nil
     end
+
+    def available_permits(token)
+      sem = @client.getSemaphore(token)
+      sem.availablePermits
+    end
+
   end
 
   # TODO Add lock / mutex functionality

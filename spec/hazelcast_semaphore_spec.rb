@@ -2,45 +2,45 @@ require "spec_helper"
 
 describe HazelcastSemaphore do
 
-  context "multiple number of resources" do
-    semaphore = HazelcastSemaphore::Client.new("multi_token_sample", host='127.0.0.1', :resource => 5)
+  hclient = HazelcastSemaphore::Client.new('127.0.0.1')
 
-    it "should initialize a semaphore" do
-      expect(semaphore.class).to eq(HazelcastSemaphore::Client)
-    end
-
-    it "should return the correct number of available resources" do
-      p "Available permit for semaphore #{semaphore.available_permits}"
-      expect(semaphore.available_permits).to eq(5)
-      expect(semaphore.available_permits).to_not eq(6)
-    end
-
-    it "should return the correct number of available resource after locking" do
-      semaphore.lock
-      expect(semaphore.available_permits).to eq(4)
-    end
-
-    it "should return the correct number of available resources after unlocking" do
-      semaphore.unlock
-      expect(semaphore.available_permits).to eq(5)
-    end
-
+  after(:all) do
+    hclient.shutdown if hclient
   end
 
+  it "inits a semaphore with the given number of permits" do
+    token = "#{Time.now.to_i}#{rand(1000000)}"
+    expect(hclient.exists?(token)).to be false
+    expect(hclient.init(token, 4)).to be true
+    expect(hclient.exists?(token)).to be true
+  end
 
-  context "single number of resource" do
-    semaphore = HazelcastSemaphore::Client.new("single_token_sample", host='127.0.0.1', :resource => 1)
+  it "destroys a semaphore" do
+    token = "#{Time.now.to_i}#{rand(1000000)}"
+    expect(hclient.init(token, 4)).to be true
+    expect(hclient.exists?(token)).to be true
+    hclient.destroy(token)
+    expect(hclient.exists?(token)).to be false
+  end
 
-    it "should lock and unlock" do
-      p "Locking semaphore with count #{semaphore.available_permits}"
-
-      semaphore.lock
-      expect(semaphore.locked?).to eq(true)
-
-      semaphore.unlock
-      expect(semaphore.locked?).to eq(false)
+  it "should allow execution if there are available permits" do
+    token = "#{Time.now.to_i}#{rand(1000000)}"
+    hclient.init(token, 4)
+    hclient.exec_inside(token) do
+      expect(true).to be true
     end
+  end
 
+  it "should allow only up to available_permits number of executions" do
+    pending 'Implement me'
+  end
+
+  it "should NOT allow execution when there are no available permits" do
+    pending 'Implement me'
+  end
+
+  it "should tell if a semaphore exists" do
+    pending 'Implement me'
   end
 
 end

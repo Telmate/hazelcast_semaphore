@@ -1,8 +1,15 @@
 require "spec_helper"
+require 'java'
+
+class TestSupport < Java::ComHazelcastTest::HazelcastTestSupport
+end
 
 describe HazelcastSemaphore do
 
-  hclient = HazelcastSemaphore::Client.new('127.0.0.1')
+  support = TestSupport.new
+  inst = support.createHazelcastInstance
+
+  hclient = HazelcastSemaphore::Client.new('127.0.0.1', :hazelcast_instance => inst)
 
   after(:all) do
     hclient.shutdown if hclient
@@ -60,3 +67,4 @@ describe HazelcastSemaphore do
   end
 
 end
+

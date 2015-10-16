@@ -9,16 +9,19 @@ module HazelcastSemaphore
     java_import 'com.hazelcast.client.config.ClientNetworkConfig'
     java_import 'java.util.concurrent.TimeUnit'
 
-    def initialize(host = "127.0.0.1")
-      # TODO create a hazelcast client according to environment? e.g., mock if testing
+    def initialize(host = "127.0.0.1", opts = nil)
+      # allow any framework to inject the hazelcast instance to use
+      if opts[:hazelcast_instance]
+        @client = opts[:hazelcast_instance]
+      else
+        network_config = ClientNetworkConfig.new
+        network_config.addAddress(host)
 
-      network_config = ClientNetworkConfig.new
-      network_config.addAddress(host)
+        client_config = ClientConfig.new
+        client_config.setNetworkConfig(network_config)
 
-      client_config = ClientConfig.new
-      client_config.setNetworkConfig(network_config)
-
-      @client = HazelcastClient.newHazelcastClient
+        @client = HazelcastClient.newHazelcastClient
+      end
     end
 
     def init(token, num_permits = 1)

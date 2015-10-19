@@ -10,6 +10,7 @@ describe HazelcastSemaphore do
   inst = support.createHazelcastInstance
 
   hclient = HazelcastSemaphore::Client.new('127.0.0.1', :hazelcast_instance => inst)
+  #hclient = HazelcastSemaphore::Client.new()
 
   after(:all) do
     hclient.shutdown if hclient
@@ -20,6 +21,7 @@ describe HazelcastSemaphore do
     expect(hclient.exists?(token)).to be false
     expect(hclient.init(token, 4)).to be true
     expect(hclient.exists?(token)).to be true
+    hclient.destroy(token)
   end
 
   it "destroys a semaphore" do
@@ -36,26 +38,26 @@ describe HazelcastSemaphore do
     hclient.exec_inside(token) do
       expect(true).to be true
     end
+    hclient.destroy(token)
   end
 
-  it "should allow only up to available_permits number of executions" do
+  it "should allow only up to available_permits simultaneous number of executions" do
     token = "#{Time.now.to_i}#{rand(1000000)}"
     hclient.init(token, 4)
+    expect(hclient.available_permits(token)).to eq 4
 
+    ths = []
     4.times.each do
-      Thread.new { hclient.exec_inside(token) { sleep 2 } }
+      ths << Thread.new { hclient.exec_inside(token) { sleep 4 } }
     end
+
+    sleep 1 # wait for all the threads to start
     expect(hclient.available_permits(token)).to eq 0
-  end
+    expect { hclient.exec_inside(token, 1) {  } }.to raise_error(/Timeout/)
 
-  it "should NOT allow execution when there are no available permits" do
-    token = "#{Time.now.to_i}#{rand(1000000)}"
-    hclient.init(token, 2)
-
-    2.times.each do
-      Thread.new { hclient.exec_inside(token) { sleep 10 } }
-    end
-    expect { hclient.exec_inside(token, 2) { } }.to raise_error(RuntimeError, "Timeout in 2s waiting for execution")
+    ths.each(&:join)
+    expect(hclient.available_permits(token)).to eq 4
+    hclient.destroy(token)
   end
 
   it "should tell if a semaphore exists" do
@@ -64,6 +66,7 @@ describe HazelcastSemaphore do
 
     expect(hclient.exists?(token)).to be true
     expect(hclient.exists?("unknown_token")).to be false
+    hclient.destroy(token)
   end
 
 end

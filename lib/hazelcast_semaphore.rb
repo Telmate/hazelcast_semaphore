@@ -9,7 +9,7 @@ module HazelcastSemaphore
     java_import 'com.hazelcast.client.config.ClientNetworkConfig'
     java_import 'java.util.concurrent.TimeUnit'
 
-    def initialize(host = "127.0.0.1", opts = nil)
+    def initialize(host = "127.0.0.1", opts = {})
       # allow any framework to inject the hazelcast instance to use
       if opts[:hazelcast_instance]
         @client = opts[:hazelcast_instance]
@@ -56,8 +56,7 @@ module HazelcastSemaphore
     end
 
     def available_permits(token)
-      sem = @client.getSemaphore(token)
-      sem.availablePermits
+      @client.getSemaphore(token).availablePermits
     end
 
   end

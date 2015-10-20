@@ -33,10 +33,10 @@ module HazelcastSemaphore
       @client.getSemaphore(token).destroy
     end
 
-    def exec_inside(token, timeout = 4)
+    def exec_inside(token, timeout = 4000)
       sem = @client.getSemaphore(token)
       if block_given?
-        if sem.tryAcquire(timeout, TimeUnit::SECONDS)
+        if sem.tryAcquire(timeout, TimeUnit::MILLISECONDS)
           yield
           sem.release
         else
@@ -55,8 +55,8 @@ module HazelcastSemaphore
       @client = nil
     end
 
-    def available_permits(token)
-      @client.getSemaphore(token).availablePermits
+    def available?(token)
+      exists?(token) && @client.getSemaphore(token).availablePermits > 0
     end
 
   end

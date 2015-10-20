@@ -6,8 +6,7 @@ end
 
 describe HazelcastSemaphore do
 
-  support = TestSupport.new
-  inst = support.createHazelcastInstance
+  inst = TestSupport.new.createHazelcastInstance
 
   hclient = HazelcastSemaphore::Client.new('127.0.0.1', :hazelcast_instance => inst)
   #hclient = HazelcastSemaphore::Client.new()
@@ -21,6 +20,7 @@ describe HazelcastSemaphore do
     expect(hclient.exists?(token)).to be false
     expect(hclient.init(token, 4)).to be true
     expect(hclient.exists?(token)).to be true
+    expect(hclient.available?(token)).to be true
     hclient.destroy(token)
   end
 
@@ -41,22 +41,23 @@ describe HazelcastSemaphore do
     hclient.destroy(token)
   end
 
-  it "should allow only up to available_permits simultaneous number of executions" do
+  it "should allow only up to initialized number of simultaneous executions" do
     token = "#{Time.now.to_i}#{rand(1000000)}"
     hclient.init(token, 4)
-    expect(hclient.available_permits(token)).to eq 4
+    expect(hclient.available?(token)).to be true
 
     ths = []
     4.times.each do
-      ths << Thread.new { hclient.exec_inside(token) { sleep 4 } }
+      ths << Thread.new { hclient.exec_inside(token) { sleep 2 } }
     end
 
-    sleep 1 # wait for all the threads to start
-    expect(hclient.available_permits(token)).to eq 0
-    expect { hclient.exec_inside(token, 1) {  } }.to raise_error(/Timeout/)
+    sleep 0.1 # wait for all the threads to start
+
+    expect(hclient.available?(token)).to be false
+    expect { hclient.exec_inside(token, 100) {  } }.to raise_error(/Timeout/)
 
     ths.each(&:join)
-    expect(hclient.available_permits(token)).to eq 4
+    expect(hclient.available?(token)).to be true
     hclient.destroy(token)
   end
 
